@@ -1,0 +1,49 @@
+name: ccplayer-patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      deb_path:
+        description: 原版 deb 在仓库内的路径（相对仓库根），默认 input/original.deb
+        required: false
+        default: input/original.deb
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run patch (字节断言 + NOP + 重打包)
+        run: |
+          python scripts/patch_deb.py "${{ inputs.deb_path }}" output
+        shell: bash
+
+      - name: Upload patched deb (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: patched-deb
+          path: output/*.deb
+          if-no-files-found: error
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: output/*.deb
+          name: 去抢焦点补丁版
+          body: |
+            自动补丁流水线产物（版本号已自动递增）。
+
+            改动：双架构各 1 处 BL->NOP，禁用"点播放且无播放时自动启动/恢复音乐 App"，
+            消除抢占系统音频焦点导致其他应用自动暂停的路径。背景视频/图片原本即静音，未改动。
+
+            验收：见 CHECKLIST.md（仓库根目录）。
