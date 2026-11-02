@@ -38,6 +38,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: patch-${{ github.run_number }}
           files: output/*.deb
           name: 去抢焦点补丁版
           body: |
